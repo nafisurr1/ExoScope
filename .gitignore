@@ -4,6 +4,7 @@ dist/
 .env.local
 *.local
 .DS_Store
+.venv/
 
 # onnxruntime-web distribution files (~96 MB).
 # Not committed: exoplanetModel.ts loads the WASM runtime from a CDN, so these

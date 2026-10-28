@@ -1,0 +1,118 @@
+{
+  "algorithm": "foldse",
+  "asp": [
+    "disposition(X,'planet') :- planet_radius(X,N1), N1=<14.59, duty_cycle(X,N2), N2=<0.062, period_days(X,N3), N3=<234.636, not ab1(X,'True'), not ab2(X,'True').",
+    "ab1(X,'True') :- duty_cycle(X,N2), not(N2=<0.033), period_days(X,N3), N3=<10.501, depth_ppm(X,N4), N4=<189.5, duration_hours(X,N5), N5=<1.631.",
+    "ab2(X,'True') :- star_temp_k(X,N6), not(N6=<6214.0), duration_hours(X,N5), N5=<1.919."
+  ],
+  "flat_rules": [
+    {
+      "ab_items": [
+        [
+          "ab1",
+          "==",
+          "True"
+        ],
+        [
+          "ab2",
+          "==",
+          "True"
+        ]
+      ],
+      "head": [
+        "disposition",
+        "==",
+        "planet"
+      ],
+      "main_items": [
+        [
+          "planet_radius",
+          "=<",
+          14.59
+        ],
+        [
+          "duty_cycle",
+          "=<",
+          0.06159
+        ],
+        [
+          "period_days",
+          "=<",
+          234.6357
+        ]
+      ]
+    },
+    {
+      "ab_items": [],
+      "head": [
+        "ab1",
+        "==",
+        "True"
+      ],
+      "main_items": [
+        [
+          "duty_cycle",
+          "!=<",
+          0.03321
+        ],
+        [
+          "period_days",
+          "=<",
+          10.5008
+        ],
+        [
+          "depth_ppm",
+          "=<",
+          189.5
+        ],
+        [
+          "duration_hours",
+          "=<",
+          1.631
+        ]
+      ]
+    },
+    {
+      "ab_items": [],
+      "head": [
+        "ab2",
+        "==",
+        "True"
+      ],
+      "main_items": [
+        [
+          "star_temp_k",
+          "!=<",
+          6214.0
+        ],
+        [
+          "duration_hours",
+          "=<",
+          1.919
+        ]
+      ]
+    }
+  ],
+  "label": "disposition",
+  "num_attrs": [
+    "period_days",
+    "depth_ppm",
+    "duration_hours",
+    "star_temp_k",
+    "star_gravity",
+    "star_radius",
+    "duty_cycle",
+    "planet_radius"
+  ],
+  "pos_val": "planet",
+  "str_attrs": [],
+  "training_metrics": {
+    "feature_count": 8,
+    "predicate_count": 9,
+    "ratio": 0.5,
+    "row_count": 6068,
+    "rule_count": 3,
+    "tail": 0.005,
+    "training_seconds": 4.105655670631677
+  }
+}

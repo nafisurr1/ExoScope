@@ -1,0 +1,92 @@
+{
+  "algorithm": "foldse",
+  "asp": [
+    "disposition(X,'planet') :- depth_ppm(X,N1), N1=<25391.1, duty_cycle(X,N2), N2>0.001, N2=<0.033, period_days(X,N3), N3=<234.636, star_radius(X,N4), N4=<1.877, not ab1(X,'True').",
+    "ab1(X,'True') :- depth_ppm(X,N1), not(N1=<1932.5), star_temp_k(X,N5), not(N5=<5868.0)."
+  ],
+  "flat_rules": [
+    {
+      "ab_items": [
+        [
+          "ab1",
+          "==",
+          "True"
+        ]
+      ],
+      "head": [
+        "disposition",
+        "==",
+        "planet"
+      ],
+      "main_items": [
+        [
+          "depth_ppm",
+          "=<",
+          25391.1
+        ],
+        [
+          "duty_cycle",
+          ">",
+          0.00136
+        ],
+        [
+          "duty_cycle",
+          "=<",
+          0.03321
+        ],
+        [
+          "period_days",
+          "=<",
+          234.6357
+        ],
+        [
+          "star_radius",
+          "=<",
+          1.877
+        ]
+      ]
+    },
+    {
+      "ab_items": [],
+      "head": [
+        "ab1",
+        "==",
+        "True"
+      ],
+      "main_items": [
+        [
+          "depth_ppm",
+          "!=<",
+          1932.5
+        ],
+        [
+          "star_temp_k",
+          "!=<",
+          5868.000000000001
+        ]
+      ]
+    }
+  ],
+  "label": "disposition",
+  "num_attrs": [
+    "period_days",
+    "depth_ppm",
+    "duration_hours",
+    "star_temp_k",
+    "star_gravity",
+    "star_radius",
+    "duty_cycle",
+    "depth_per_hour"
+  ],
+  "pos_val": "planet",
+  "str_attrs": [],
+  "training_metrics": {
+    "feature_count": 8,
+    "predicate_count": 7,
+    "ratio": 0.5,
+    "row_count": 6068,
+    "rule_count": 2,
+    "tail": 0.005,
+    "training_seconds": 5.394598571001552
+  }
+}
