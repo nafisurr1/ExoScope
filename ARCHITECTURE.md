@@ -172,8 +172,7 @@ Stellar values come from the FITS header (`TEFF`, `LOGG`, `RADIUS`), falling
 back to solar values (5778 K, 4.44, 1.0) when absent — `:278-283` of
 `exoplanetFeatures.ts`. `assumed_star_values` records which ones were filled
 in, and the result page says so. Every one of the 170 MAST files in
-`ml/benchmark/` has all three; the two bundled example files have them
-stripped, so they run on solar defaults.
+`ml/benchmark/` has all three, as do the two example files.
 
 ### What the model actually is
 
@@ -258,7 +257,7 @@ index.tsx                     React entry point
 types.ts                      Shared interfaces
 components/
   FileUpload.tsx              Drag-and-drop .fits upload
-  ExampleFiles.tsx            Two Kepler files embedded as base64
+  ExampleFiles.tsx            Loads the two example files from public/examples/
   ArchiveSearch.tsx           NASA Exoplanet Archive search + MAST fetch
   LightCurveChart.tsx         Flux vs time, LTTB downsampled to 3,000 points
   MetadataViewer.tsx          FITS header display
@@ -276,6 +275,7 @@ ml/
   fold/                       FOLD-SE rules, SHAP, Random Forest comparison
   benchmark/                  170-file real-data accuracy test
 public/model/                 Model served to the browser
+public/examples/              Two unedited MAST quarter-2 files for the example buttons
 ```
 
 `public/ort*` (the onnxruntime-web distribution, ~96 MB) is **gitignored**. The
@@ -301,10 +301,12 @@ Ordered by impact.
    already passed NASA's detection pipeline, so "no signal at all" is outside
    their training data.
 
-3. **The built-in "False Positive" example is called a planet.** In that
-   trimmed KIC 2445129 file the search finds a 3.41-day, 513 ppm dip instead of
-   NASA's 10.32-day, 872 ppm signal, and both the forest (77%) and the rules
-   accept it.
+3. **Some false positives look like planets to everything the site
+   measures.** For KIC 2445129 (KOI-793.01, quarter 2) the search finds NASA's
+   10.32-day period, and both the forest (92%) and the rules call it a planet.
+   NASA rejected it for a secondary eclipse and a centroid offset, neither of
+   which the site measures. It used to be the "False Positive" example; that
+   button now uses KIC 11619964 (KOI-7466.01), which both models reject.
 
 4. **~180 ms UI freeze.** `extractFeatures` is synchronous on the main thread
    (`App.tsx:416`) with no worker and no yields. Not perceptible, but a Web

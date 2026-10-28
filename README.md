@@ -57,9 +57,10 @@ npm run dev
 
 Open <http://localhost:3000>.
 
-Two example files are built into the home page — one planet candidate
-(KIC 3115833) and one false positive (KIC 2445129) — so you can try it without
-downloading anything.
+Two example files are on the home page — a planet candidate (KIC 3115833,
+KOI-797.01) and a false positive (KIC 11619964, KOI-7466.01, an eclipsing
+binary) — so you can try it without downloading anything. Both are unedited
+quarter-2 files from MAST, in `public/examples/`.
 
 > **Note:** the NASA archive search on the home page calls `/api/mast`, which is
 > a Vercel serverless function, so it only works on the deployed site. Under
@@ -85,10 +86,10 @@ Kepler light curves are free from NASA's MAST archive:
 3. Download a file ending in `llc.fits` (long cadence)
 4. Drag it into ExoScope
 
-Or fetch directly:
+Or fetch directly through MAST's download service:
 
 ```bash
-curl -LO "https://archive.stsci.edu/pub/kepler/lightcurves/0024/002445129/kplr002445129-2009166043257_llc.fits"
+curl -o kplr002445129-2009259160929_llc.fits "https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:Kepler/url/missions/kepler/lightcurves/0024/002445129/kplr002445129-2009259160929_llc.fits"
 ```
 
 Files follow the pattern `kplr{9-digit KIC}-{timestamp}_llc.fits`.
@@ -145,9 +146,10 @@ This is a student project with known, documented problems. Be skeptical of its
 output.
 
 - **About one file in four is called wrong.** See the accuracy table above.
-- **The built-in "False Positive" example is called a planet.** In that
-  trimmed file the search finds a 3.4-day, 513 ppm dip rather than NASA's
-  10.3-day signal, and both the forest (77%) and the rules accept it.
+- **Some false positives look like planets to everything the site measures.**
+  For KIC 2445129 the site finds NASA's 10.32-day dip, and both the forest
+  (92%) and the rules call it a planet. NASA rejected it for a secondary
+  eclipse and a shifted light centre, which the site does not check.
 - **The classifier is applied outside its training distribution.** It learned
   from NASA catalog values measured across the full mission; it receives
   single-quarter BLS estimates. It also only ever saw objects that had already
