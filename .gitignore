@@ -12,3 +12,8 @@ dist/
 # ort.env.wasm.wasmPaths = "/". Restore with `npm i` + copy from node_modules
 # if the runtime is ever switched back to self-hosting.
 public/ort*
+
+# ml/benchmark downloads and outputs (regenerate with the scripts)
+ml/benchmark/fits/
+ml/benchmark/features.json
+ml/benchmark/measure.cjs
