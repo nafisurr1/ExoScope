@@ -1,6 +1,12 @@
 # ExoScope — model training
 
-## ⚠️ `train_model.py` does not reproduce the shipped model
+Also in this folder:
+
+- [`fold/`](fold/) — readable rules learned with FOLD-SE, a SHAP analysis, and a
+  Random Forest comparison. The website reads `fold/rules.json` to explain results.
+- [`benchmark/`](benchmark/) — the website's accuracy on 170 real Kepler light curves.
+
+## `train_model.py` does not reproduce the shipped model
 
 This is the most important thing to know before touching anything here.
 
@@ -25,19 +31,19 @@ Evidence for the shipped model's identity, from parsing the ONNX graph:
 
 The script that produced the shipped model is not in this repository.
 **Running `train_model.py` now will produce a model the app cannot load** — the
-app sends 13 features (`utils/exoplanetModel.ts:35`) and the new one would
+app sends 13 features (`utils/exoplanetModel.ts:41`) and the new one would
 expect 10, so `session.run` throws a shape error.
 
 `feature_config.json` describes the *shipped* model (v3.4.1, 13 features), not
 what the script produces. Note also that **nothing reads this file at runtime** —
-its `threshold: 0.25` has no effect. The live cutoff is `0.45`, hardcoded in
-`combineSignals`.
+its `threshold: 0.25` has no effect. The live cutoff is `0.5`, set as
+`PLANET_CUTOFF` in `utils/exoplanetModel.ts`.
 
 ---
 
 ## The 13 features the app actually sends
 
-Order matters and must match exactly. From `utils/exoplanetModel.ts:35`:
+Order matters and must match exactly. From `utils/exoplanetModel.ts:41`:
 
 ```
  0  period_days             from BLS
@@ -122,9 +128,10 @@ fixed fraction of the period. The most important feature arrives quantized to a
 
 Related: every training example was already a KOI, meaning it had passed NASA's
 detection pipeline. The model has never seen "a star with no transit at all", so
-that input is outside its training distribution entirely. This is why
-`combineSignals` blends in a physics-based SNR term rather than trusting the
-classifier alone.
+that input is outside its training distribution entirely. The website used to
+blend in the BLS signal-to-noise ratio for that reason, but on 170 real Kepler
+quarters it made the verdict worse (59.4% with the blend, 73.5% with the forest
+alone), so the forest now decides by itself. See [`benchmark/`](benchmark/).
 
 **The principled fix** is to train on BLS-derived features instead of catalog
 values: run this project's own BLS over a few hundred labelled Kepler quarters
