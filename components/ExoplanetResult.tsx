@@ -30,7 +30,7 @@ const ConfidenceArc: React.FC<{ value: number; isExoplanet: boolean }> = ({ valu
           {pct}%
         </text>
       </svg>
-      <span className="text-xs text-slate-500 -mt-1">Confidence</span>
+      <span className="text-xs text-slate-500 -mt-1">Chance of planet</span>
     </div>
   );
 };
@@ -212,7 +212,7 @@ function buildReasoning(result: PredictionResult, teq: number): { text: string; 
 }
 
 const ExoplanetResult: React.FC<ExoplanetResultProps> = ({ result }) => {
-  const { isExoplanet, confidence, rfConfidence, gbConfidence, overridden, overrideReason, features } = result;
+  const { isExoplanet, planetProbability, features } = result;
   const planetType = getPlanetType(features.est_planet_radius_rearth);
   const teq = getEquilibriumTemp(features.period_days);
   const habitable = teq > 200 && teq < 320;
@@ -234,31 +234,18 @@ const ExoplanetResult: React.FC<ExoplanetResultProps> = ({ result }) => {
               {isExoplanet ? 'Exoplanet Candidate Detected' : 'No Exoplanet Detected'}
             </h2>
             <p className="text-slate-500 text-sm mt-0.5">
-              ML + Physics Analysis · {features.total_obs_days.toFixed(0)} days observed
+              Random Forest · {features.total_obs_days.toFixed(0)} days observed
             </p>
           </div>
         </div>
-        <ConfidenceArc value={confidence} isExoplanet={isExoplanet} />
+        <ConfidenceArc value={planetProbability} isExoplanet={isExoplanet} />
       </div>
-
-      {/* Physics override banner */}
-      {overridden && (
-        <div className="flex items-start gap-3 bg-amber-900/20 border border-amber-800/50 rounded-lg px-4 py-3 mb-5">
-          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-          <div>
-            <span className="text-xs font-semibold text-amber-400 uppercase tracking-wide">Physics Override Active</span>
-            <p className="text-xs text-amber-300/80 mt-0.5">{overrideReason}</p>
-          </div>
-        </div>
-      )}
 
       {/* Model breakdown */}
       <div className="bg-slate-950/40 border border-slate-800/50 rounded-lg p-4 mb-5">
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Model Breakdown</p>
         <div className="space-y-2.5">
-          <ModelBar label="BLS + Physics" value={rfConfidence} isExoplanet={isExoplanet} />
-          <ModelBar label="ML Score" value={gbConfidence} isExoplanet={isExoplanet} />
-          <ModelBar label="Ensemble" value={confidence} isExoplanet={isExoplanet} />
+          <ModelBar label="Random Forest" value={planetProbability} isExoplanet={isExoplanet} />
         </div>
       </div>
 

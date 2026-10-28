@@ -10,14 +10,20 @@ import { ExoplanetFeatures } from './exoplanetFeatures';
 ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.3/dist/';
 
 export interface PredictionResult {
-  isExoplanet:     boolean;
-  confidence:      number;
-  rfConfidence:    number;
-  gbConfidence:    number;
-  overridden:      boolean;
-  overrideReason?: string;
-  features:        ExoplanetFeatures;
+  isExoplanet:       boolean;
+  /** Random Forest probability (0-1) that the signal is a planet. */
+  planetProbability: number;
+  features:          ExoplanetFeatures;
 }
+
+/**
+ * The Random Forest alone decides. Signal strength (BLS SNR) used to carry 60%
+ * of the vote, but on 170 real Kepler quarters (85 confirmed planets, 85 false
+ * positives) it ranked false positives above planets (AUC 0.413), because
+ * eclipsing binaries make deeper, stronger dips. The blend got 59.4% right;
+ * the forest alone at a 50% cutoff got 73.5%.
+ */
+const PLANET_CUTOFF = 0.5;
 
 let sessionPromise: Promise<ort.InferenceSession> | null = null;
 
@@ -76,31 +82,6 @@ function extractProbPlanet(output: ort.InferenceSession.OnnxValueMapType): numbe
   return 0.5;
 }
 
-/**
- * Primary detection logic using BLS SNR.
- *
- * SNR thresholds (empirical from Kepler pipeline):
- *   SNR > 10  → strong signal, likely planet
- *   SNR 7-10  → marginal, use ML to decide
- *   SNR < 7   → weak signal, unlikely planet
- *
- * ML probability adjusts confidence within each band.
- */
-function combineSignals(snr: number, mlProb: number): { isExoplanet: boolean; confidence: number } {
-  // Normalize SNR to 0-1 scale (sigmoid-like)
-  // SNR=7 → ~0.5, SNR=10 → ~0.75, SNR=15 → ~0.9
-  const snrScore = 1 / (1 + Math.exp(-(snr - 8) / 2));
-
-  // Blend: 60% SNR, 40% ML
-  const combined = 0.60 * snrScore + 0.40 * mlProb;
-
-  // Decision threshold: 0.45 (biased toward sensitivity)
-  const isExoplanet = combined >= 0.45;
-  const confidence  = Math.max(0.01, Math.min(0.99, combined));
-
-  return { isExoplanet, confidence };
-}
-
 export async function runPrediction(features: ExoplanetFeatures): Promise<PredictionResult> {
   const session = await getSession();
 
@@ -131,23 +112,12 @@ export async function runPrediction(features: ExoplanetFeatures): Promise<Predic
     console.log('[ExoScope] Raw probs: class0=', d[0], ' class1=', d[1]);
   }
 
-  const mlProb = extractProbPlanet(output);
-  const snr    = features.bls_snr;
-
-  console.log('[ExoScope] BLS SNR:', snr.toFixed(2), '| ML prob:', mlProb.toFixed(3));
-
-  const { isExoplanet, confidence } = combineSignals(snr, mlProb);
-
-  // snrScore for display
-  const snrScore = 1 / (1 + Math.exp(-(snr - 8) / 2));
+  const planetProbability = extractProbPlanet(output);
+  console.log('[ExoScope] Planet probability:', planetProbability.toFixed(3));
 
   return {
-    isExoplanet,
-    confidence,
-    rfConfidence: snrScore,      // shows BLS SNR score
-    gbConfidence: mlProb,        // shows ML probability
-    overridden:      false,
-    overrideReason:  undefined,
+    isExoplanet: planetProbability >= PLANET_CUTOFF,
+    planetProbability,
     features,
   };
 }
