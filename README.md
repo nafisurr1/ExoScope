@@ -129,7 +129,6 @@ are in [`ml/benchmark/`](ml/benchmark/).
 | Decision | Accuracy |
 |---|---|
 | Website: Random Forest, cut at 50% | **73.5%** |
-| Earlier website: 0.6 × signal strength + 0.4 × forest | 59.4% |
 | FOLD-SE rules on the website's measurements | 65.9% |
 
 On NASA's own catalog values the same approaches do much better: a forest
