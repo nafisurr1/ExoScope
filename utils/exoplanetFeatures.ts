@@ -7,8 +7,9 @@
  *   3. Phase-binned BLS on the detrended flux — see runBLS below
  *   4. Compute the 13 model features plus display values
  *
- * Primary detection is the BLS signal-to-noise ratio (physics based); the ML
- * model in exoplanetModel.ts is a secondary confidence scorer on top of it.
+ * The Random Forest in exoplanetModel.ts makes the planet / not-a-planet call
+ * from these features, and foldseRules.ts runs the FOLD-SE rules on them to
+ * explain it.
  */
 
 import { ParsedFitsData, FitsHeaderCard } from '../types';
@@ -34,6 +35,9 @@ export interface ExoplanetFeatures {
   total_obs_days:           number;
   flux_std:                 number;
   bls_snr:                  number;
+
+  /** Star values the file did not include, so the Sun's were used instead. */
+  assumed_star_values: { temperature: boolean; gravity: boolean; radius: boolean };
 }
 
 function medianVal(arr: number[]): number {
@@ -272,9 +276,12 @@ export function extractFeatures(fitsData: ParsedFitsData): ExoplanetFeatures | n
   const flux = idx.map(i => rawF[i]);
 
   const allHdr        = [...fitsData.primaryHeader, ...fitsData.extensionHeader];
-  const stellarTeff   = headerNum(allHdr, 'TEFF',   'TEFF_KIC',   'TEFFKIC')   ?? 5778;
-  const stellarLogg   = headerNum(allHdr, 'LOGG',   'LOGG_KIC',   'LOGGKIC')   ?? 4.44;
-  const stellarRadius = headerNum(allHdr, 'RADIUS', 'RADIUS_KIC', 'RADIUSKIC') ?? 1.0;
+  const teffInFile    = headerNum(allHdr, 'TEFF',   'TEFF_KIC',   'TEFFKIC');
+  const loggInFile    = headerNum(allHdr, 'LOGG',   'LOGG_KIC',   'LOGGKIC');
+  const radiusInFile  = headerNum(allHdr, 'RADIUS', 'RADIUS_KIC', 'RADIUSKIC');
+  const stellarTeff   = teffInFile   ?? 5778;
+  const stellarLogg   = loggInFile   ?? 4.44;
+  const stellarRadius = radiusInFile ?? 1.0;
 
   const totalDays = time[time.length - 1] - time[0];
 
@@ -375,10 +382,17 @@ export function extractFeatures(fitsData: ParsedFitsData): ExoplanetFeatures | n
     total_obs_days:           totalDays,
     flux_std:                 fstd,
     bls_snr:                  bls.snr,
+
+    assumed_star_values: {
+      temperature: teffInFile   === null,
+      gravity:     loggInFile   === null,
+      radius:      radiusInFile === null,
+    },
   };
 
   for (const k of Object.keys(feat) as (keyof ExoplanetFeatures)[]) {
-    if (!isFinite(feat[k])) (feat[k] as number) = 0;
+    const v = feat[k];
+    if (typeof v === 'number' && !isFinite(v)) (feat[k] as number) = 0;
   }
 
   return feat;

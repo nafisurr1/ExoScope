@@ -1,7 +1,8 @@
 import React from 'react';
 import { PredictionResult } from '../utils/exoplanetModel';
-import { getPlanetType, getEquilibriumTemp } from '../utils/exoplanetFeatures';
-import { AlertTriangle, CheckCircle, XCircle, Zap, Globe, Thermometer, Clock, Layers, FlaskConical } from 'lucide-react';
+import { ExoplanetFeatures, getPlanetType, getEquilibriumTemp } from '../utils/exoplanetFeatures';
+import { checkRules, ConditionCheck, RuleCheck, MEASUREMENT, RULE_RESULTS } from '../utils/foldseRules';
+import { AlertTriangle, Check, CheckCircle, ListChecks, X, XCircle, Zap, Globe, Thermometer, Clock, Layers } from 'lucide-react';
 
 interface ExoplanetResultProps {
   result: PredictionResult;
@@ -40,7 +41,7 @@ const ModelBar: React.FC<{ label: string; value: number; isExoplanet: boolean }>
   const color = isExoplanet ? 'bg-cyan-500' : 'bg-red-500';
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs text-slate-500 w-20 shrink-0">{label}</span>
+      <span className="text-xs text-slate-500 w-24 shrink-0">{label}</span>
       <div className="flex-1 bg-slate-800 rounded-full h-2 overflow-hidden">
         <div className={`h-full rounded-full ${color} transition-all duration-700`} style={{ width: `${pct}%` }} />
       </div>
@@ -59,156 +60,59 @@ const StatPill: React.FC<{ icon: React.ReactNode; label: string; value: string }
   </div>
 );
 
-/** Generate a set of specific, data-driven scientific reasoning bullets */
-function buildReasoning(result: PredictionResult, teq: number): { text: string; positive: boolean }[] {
-  const f = result.features;
-  const reasons: { text: string; positive: boolean }[] = [];
+const ASSUMED: { key: keyof ExoplanetFeatures['assumed_star_values']; name: string; sun: string }[] = [
+  { key: 'temperature', name: 'temperature',     sun: '5778 K' },
+  { key: 'radius',      name: 'size',            sun: '1.0 solar radius' },
+  { key: 'gravity',     name: 'surface gravity', sun: 'log g 4.44' },
+];
 
-  // ── BLS SNR ──────────────────────────────────────────────────────────────
-  const snr = f.bls_snr ?? 0;
-  if (snr >= 15) {
-    reasons.push({
-      text: `BLS periodogram SNR of ${snr.toFixed(1)}σ — a strong, phase-coherent flux decrement repeating at P = ${f.period_days.toFixed(3)} d, well above the detection floor of ~7σ used in NASA's TPS pipeline.`,
-      positive: true,
-    });
-  } else if (snr >= 7) {
-    reasons.push({
-      text: `BLS periodogram SNR of ${snr.toFixed(1)}σ at P = ${f.period_days.toFixed(3)} d. Signal is above the nominal 7σ threshold but marginal; additional quarters are needed for definitive confirmation.`,
-      positive: true,
-    });
-  } else if (snr > 0) {
-    reasons.push({
-      text: `BLS periodogram SNR of only ${snr.toFixed(1)}σ — below the 7σ detection floor. The periodic signal at P = ${f.period_days.toFixed(3)} d is statistically indistinguishable from stellar noise in this single quarter.`,
-      positive: false,
-    });
+function joinWords(words: string[], last: string): string {
+  if (words.length < 2) return words.join('');
+  if (words.length === 2) return `${words[0]} ${last} ${words[1]}`;
+  return `${words.slice(0, -1).join(', ')}, ${last} ${words[words.length - 1]}`;
+}
+
+/** One check: the measured value, the cutoff, and whether it holds. */
+const ConditionRow: React.FC<{ c: ConditionCheck; inException: boolean }> = ({ c, inException }) => {
+  const m = MEASUREMENT[c.measurement] ?? { label: c.measurement, show: (v: number) => String(v) };
+  const yes = inException ? 'text-amber-400' : 'text-cyan-400';
+  const no  = inException ? 'text-slate-500' : 'text-red-400';
+  return (
+    <li className="flex items-start gap-2">
+      {c.holds
+        ? <Check className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${yes}`} aria-hidden="true" />
+        : <X className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${no}`} aria-hidden="true" />}
+      <span className="text-xs text-slate-300 leading-relaxed">
+        <span className="text-slate-400">{m.label}:</span>{' '}
+        <span className="font-mono">{c.value === null ? 'not measured' : m.show(c.value)}</span>{' '}
+        <span className="text-slate-500">(needs {c.op === '=<' ? 'at most' : 'more than'} {m.show(c.threshold)})</span>
+        <span className="sr-only">{c.holds ? ', holds' : ', does not hold'}</span>
+      </span>
+    </li>
+  );
+};
+
+const ExceptionBlock: React.FC<{ e: RuleCheck; n: string }> = ({ e, n }) => (
+  <div className={`border-l-2 pl-3 ${e.holds ? 'border-amber-500/60' : 'border-slate-700'}`}>
+    <p className={`text-xs mb-1.5 ${e.holds ? 'text-amber-300' : 'text-slate-400'}`}>
+      Exception {n} {e.holds ? 'applies' : 'does not apply'}. It applies only when all of these hold:
+    </p>
+    <ul className="space-y-1.5">
+      {e.conditions.map((c, i) => <ConditionRow key={i} c={c} inException />)}
+    </ul>
+    {e.exceptions.map((sub, i) => <div key={i} className="mt-2"><ExceptionBlock e={sub} n={`${n}.${i + 1}`} /></div>)}
+  </div>
+);
+
+/** One sentence on why the rules landed where they did. */
+function ruleSummary(r: RuleCheck): string {
+  const failed = r.conditions.filter(c => !c.holds).map(c => MEASUREMENT[c.measurement]?.label ?? c.measurement);
+  if (failed.length) {
+    return `${joinWords(failed, 'and')} ${failed.length === 1 ? 'is' : 'are'} outside the range the rules allow for a planet.`;
   }
-
-  // ── Transit depth & planet radius ────────────────────────────────────────
-  const depth = f.transit_depth_ppm;
-  const rEarth = f.est_planet_radius_rearth;
-  if (depth > 0) {
-    if (depth > 5000) {
-      reasons.push({
-        text: `Transit depth of ${(depth / 1000).toFixed(2)} ppt (${depth.toFixed(0)} ppm) implies a radius ratio Rp/Rs ≈ ${Math.sqrt(depth / 1e6).toFixed(3)}, consistent with a gas giant (R ≈ ${rEarth.toFixed(1)} R⊕). Photometric contamination from a background EB cannot be excluded without centroid analysis.`,
-        positive: true,
-      });
-    } else if (depth > 500) {
-      reasons.push({
-        text: `Transit depth of ${depth.toFixed(0)} ppm (Rp/Rs ≈ ${Math.sqrt(depth / 1e6).toFixed(4)}) points to a sub-Jupiter or Neptune-class body at R ≈ ${rEarth.toFixed(1)} R⊕. Depths in this range are well-detected by Kepler's 29.4-minute cadence photometry.`,
-        positive: true,
-      });
-    } else if (depth > 50) {
-      reasons.push({
-        text: `Shallow transit depth of ${depth.toFixed(0)} ppm (R ≈ ${rEarth.toFixed(1)} R⊕, super-Earth regime). At this signal level, systematics from the Kepler PDC pipeline can introduce false periodic signals; the duty cycle and stellar properties must corroborate.`,
-        positive: depth > 100,
-      });
-    } else {
-      reasons.push({
-        text: `Transit depth of ${depth.toFixed(1)} ppm is below Kepler's reliable single-quarter detection threshold (~100 ppm for quiet stars). The signal may be dominated by photometric noise or PDC detrending artifacts.`,
-        positive: false,
-      });
-    }
-  }
-
-  // ── Duty cycle / duration consistency ────────────────────────────────────
-  const duty = f.duty_cycle ?? 0;
-  const dur = f.transit_duration_hr;
-  const period = f.period_days;
-  // Expected max duration from Winn 2010: T14 ≤ 13 * (Rs)^1/3 * (P/yr)^1/3 hr
-  const Rs = f.stellar_radius_rsun ?? 1.0;
-  const physMaxHr = 13 * Math.pow(Rs, 1 / 3) * Math.pow(period / 365.25, 1 / 3);
-  if (dur > 0 && physMaxHr > 0) {
-    const ratio = dur / physMaxHr;
-    if (ratio <= 1.0) {
-      reasons.push({
-        text: `Transit duration of ${dur.toFixed(2)} hr is physically self-consistent: for a ${period.toFixed(2)}-day orbit around a ${Rs.toFixed(2)} R☉ star, the Winn (2010) maximum central-transit duration is ${physMaxHr.toFixed(2)} hr (observed / max = ${ratio.toFixed(2)}). Grazing geometries and inclination effects keep this within the expected range.`,
-        positive: true,
-      });
-    } else {
-      reasons.push({
-        text: `Transit duration of ${dur.toFixed(2)} hr exceeds the Winn (2010) physical maximum of ${physMaxHr.toFixed(2)} hr for a ${period.toFixed(2)}-day orbit around a ${Rs.toFixed(2)} R☉ star (ratio = ${ratio.toFixed(2)}). This is a red flag: eclipsing binaries or stellar variability aliases commonly produce over-long BLS solutions.`,
-        positive: false,
-      });
-    }
-  }
-
-  // ── Stellar variability ──────────────────────────────────────────────────
-  const fluxStd = f.flux_std ?? 0;
-  if (fluxStd > 0.005) {
-    reasons.push({
-      text: `Normalized flux standard deviation of ${(fluxStd * 1000).toFixed(2)}‰ indicates high intrinsic stellar variability — likely from spots, pulsations, or a late-type active star. Variability at this amplitude can create spurious BLS peaks that mimic transit morphology after detrending.`,
-      positive: false,
-    });
-  } else if (fluxStd > 0.002) {
-    reasons.push({
-      text: `Flux RMS of ${(fluxStd * 1000).toFixed(2)}‰ is moderate; the sliding-median detrend effectively removed systematic trends, but residual correlated noise may inflate or suppress the measured transit depth by ~10–30%.`,
-      positive: true,
-    });
-  } else if (fluxStd > 0) {
-    reasons.push({
-      text: `Low photometric scatter (flux RMS = ${(fluxStd * 1000).toFixed(2)}‰) after detrending indicates a photometrically quiet star — optimal conditions for reliable transit detection at the measured depth.`,
-      positive: true,
-    });
-  }
-
-  // ── Stellar context ──────────────────────────────────────────────────────
-  const teff = f.stellar_teff_k ?? 5778;
-  const logg = f.stellar_logg ?? 4.44;
-  const starClass =
-    teff > 7500 ? 'an A-type' : teff > 6000 ? 'an F-type' : teff > 5200 ? 'a G-type solar analog' : teff > 3900 ? 'a K-type' : 'an M-type';
-  const evolved = logg < 3.8;
-  if (evolved) {
-    reasons.push({
-      text: `log g = ${logg.toFixed(3)} places the host in the subgiant/giant branch (R ≈ ${Rs.toFixed(1)} R☉). Evolved hosts dilute transit depth relative to main-sequence assumptions and increase the false-positive rate from stellar companions.`,
-      positive: false,
-    });
-  } else {
-    reasons.push({
-      text: `Host is ${starClass} main-sequence star (Teff = ${teff.toFixed(0)} K, log g = ${logg.toFixed(3)}, R = ${Rs.toFixed(2)} R☉). Main-sequence hosts have the lowest a priori false-positive rate and straightforward radius scaling relations.`,
-      positive: true,
-    });
-  }
-
-  // ── Equilibrium temperature / habitability ───────────────────────────────
-  if (result.isExoplanet) {
-    if (teq > 200 && teq < 320) {
-      reasons.push({
-        text: `Equilibrium temperature of ${teq.toFixed(0)} K (assuming Bond albedo A = 0.3) places the planet near the empirical habitable zone boundary. This is a necessary but not sufficient condition for liquid surface water — atmospheric composition and greenhouse forcing remain unconstrained.`,
-        positive: true,
-      });
-    } else if (teq > 1000) {
-      reasons.push({
-        text: `Equilibrium temperature of ${teq.toFixed(0)} K — firmly in the ultra-hot regime. At this irradiation level, thermal dissociation of molecules (H₂O, TiO) and atmospheric escape are expected; the planet is unlikely to retain a substantial hydrogen envelope over Gyr timescales.`,
-        positive: false,
-      });
-    } else if (teq > 500) {
-      reasons.push({
-        text: `Equilibrium temperature of ${teq.toFixed(0)} K — hot but below the thermal dissociation threshold. The planet is a plausible target for secondary eclipse or phase-curve observations to constrain atmospheric circulation.`,
-        positive: true,
-      });
-    }
-  }
-
-  // ── n_transits ───────────────────────────────────────────────────────────
-  const nTr = f.n_transits ?? 0;
-  if (nTr >= 5) {
-    reasons.push({
-      text: `${nTr} individual transit events fold coherently at the detected period, providing phase coverage sufficient to confirm the periodicity is not a single-event artifact or systematics spike.`,
-      positive: true,
-    });
-  } else if (nTr >= 2) {
-    reasons.push({
-      text: `Only ${nTr} transit events visible in this quarter. With so few events, the period solution has higher uncertainty and a single anomalous data segment could produce a comparable BLS peak. Multi-quarter data is essential for confirmation.`,
-      positive: false,
-    });
-  } else if (nTr <= 1) {
-    reasons.push({
-      text: `Fewer than two complete transit events detected in this quarter — the period may exceed the observation baseline or the transit may have been missed due to data gaps. BLS is unreliable with ≤1 transit.`,
-      positive: false,
-    });
-  }
-
-  return reasons;
+  const applied = r.exceptions.flatMap((e, i) => (e.holds ? [String(i + 1)] : []));
+  if (applied.length) return `Every check passes, but exception ${joinWords(applied, 'and')} applies.`;
+  return 'Every check passes and no exception applies.';
 }
 
 const ExoplanetResult: React.FC<ExoplanetResultProps> = ({ result }) => {
@@ -216,7 +120,9 @@ const ExoplanetResult: React.FC<ExoplanetResultProps> = ({ result }) => {
   const planetType = getPlanetType(features.est_planet_radius_rearth);
   const teq = getEquilibriumTemp(features.period_days);
   const habitable = teq > 200 && teq < 320;
-  const reasoning = buildReasoning(result, teq);
+  const ruleCheck = checkRules(features);
+  const rulesSayPlanet = ruleCheck.holds;
+  const assumed = ASSUMED.filter(a => features.assumed_star_values[a.key]);
 
   return (
     <div className={`
@@ -234,19 +140,42 @@ const ExoplanetResult: React.FC<ExoplanetResultProps> = ({ result }) => {
               {isExoplanet ? 'Exoplanet Candidate Detected' : 'No Exoplanet Detected'}
             </h2>
             <p className="text-slate-500 text-sm mt-0.5">
-              Random Forest · {features.total_obs_days.toFixed(0)} days observed
+              Random Forest + rule check · {features.total_obs_days.toFixed(0)} days observed
             </p>
           </div>
         </div>
         <ConfidenceArc value={planetProbability} isExoplanet={isExoplanet} />
       </div>
 
-      {/* Model breakdown */}
+      {/* Star values the file did not include */}
+      {assumed.length > 0 && (
+        <div className="flex items-start gap-3 bg-amber-900/20 border border-amber-800/50 rounded-lg px-4 py-3 mb-5">
+          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-200/90 leading-relaxed">
+            This file doesn't include the star's {joinWords(assumed.map(a => a.name), 'or')}, so ExoScope
+            assumed the Sun's ({joinWords(assumed.map(a => a.sun), 'and')}). Numbers that depend on the
+            star, like planet size and the rule check, may be off.
+          </p>
+        </div>
+      )}
+
+      {/* The two models */}
       <div className="bg-slate-950/40 border border-slate-800/50 rounded-lg p-4 mb-5">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Model Breakdown</p>
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Two Models</p>
         <div className="space-y-2.5">
           <ModelBar label="Random Forest" value={planetProbability} isExoplanet={isExoplanet} />
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-500 w-24 shrink-0">Rule check</span>
+            <span className={`text-xs font-mono ${rulesSayPlanet ? 'text-cyan-300' : 'text-red-300'}`}>
+              {rulesSayPlanet ? 'Planet' : 'Not a planet'}
+            </span>
+          </div>
         </div>
+        <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+          {rulesSayPlanet === isExoplanet
+            ? 'Both models agree.'
+            : `The two models disagree. On 170 real Kepler files, the Random Forest was right more often when they disagreed (${RULE_RESULTS.forestRightWhenDisagree} times), so its answer is the one shown above.`}
+        </p>
       </div>
 
       {/* Key stats */}
@@ -263,29 +192,39 @@ const ExoplanetResult: React.FC<ExoplanetResultProps> = ({ result }) => {
         />
       </div>
 
-      {/* ── Scientific Reasoning ─────────────────────────────────────────── */}
+      {/* Why the rule check landed where it did */}
       <div className="bg-slate-950/60 border border-slate-700/40 rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <FlaskConical className="w-4 h-4 text-violet-400" />
+        <div className="flex items-center gap-2 mb-1.5">
+          <ListChecks className="w-4 h-4 text-violet-400" />
           <span className="text-xs font-semibold text-violet-400 uppercase tracking-widest">
-            Scientific Reasoning
+            Why the rule check says {rulesSayPlanet ? 'planet' : 'not a planet'}
           </span>
         </div>
-        <div className="space-y-3">
-          {reasoning.map((r, i) => (
-            <div key={i} className="flex gap-3">
-              <div className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${r.positive ? 'bg-cyan-400' : 'bg-red-400'}`} />
-              <p className={`text-xs leading-relaxed font-mono ${r.positive ? 'text-slate-300' : 'text-slate-400'}`}>
-                {r.text}
-              </p>
+        <p className="text-xs text-slate-300 mb-4">{ruleSummary(ruleCheck)}</p>
+
+        <p className="text-xs text-slate-500 mb-2">A signal counts as a planet when all of these hold:</p>
+        <ul className="space-y-1.5 mb-4">
+          {ruleCheck.conditions.map((c, i) => <ConditionRow key={i} c={c} inException={false} />)}
+        </ul>
+
+        {ruleCheck.exceptions.length > 0 && (
+          <>
+            <p className="text-xs text-slate-500 mb-2">unless one of these exceptions applies:</p>
+            <div className="space-y-3">
+              {ruleCheck.exceptions.map((e, i) => <ExceptionBlock key={i} e={e} n={String(i + 1)} />)}
             </div>
-          ))}
-          {reasoning.length === 0 && (
-            <p className="text-xs text-slate-500 font-mono">Insufficient photometric data to generate a detailed analysis.</p>
-          )}
-        </div>
-        <p className="text-xs text-slate-600 mt-4 pt-3 border-t border-slate-800">
-          Analysis based on Box Least-Squares periodogram (detrended flux), Winn (2010) transit geometry, and a Random Forest classifier trained on 7,586 Kepler Object of Interest dispositions from the NASA Exoplanet Archive.
+          </>
+        )}
+
+        <p className="text-xs text-slate-600 mt-4 pt-3 border-t border-slate-800 leading-relaxed">
+          Rules learned with FOLD-SE from {RULE_RESULTS.trainedOn.toLocaleString()} objects in NASA's Kepler
+          catalog. On NASA's own measurements of objects they had not seen, they were {RULE_RESULTS.catalogAccuracy} accurate.
+          The numbers above are measured from this one file, where the rules are less reliable:{' '}
+          {RULE_RESULTS.siteAccuracy} on 170 real Kepler files.
+        </p>
+        <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+          Transit search: Box Least-Squares on the detrended light curve. Random Forest: trained on 7,586
+          NASA Kepler objects.
         </p>
       </div>
 
