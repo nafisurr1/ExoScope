@@ -152,7 +152,7 @@ const ExoplanetResult: React.FC<ExoplanetResultProps> = ({ result }) => {
         <div className="flex items-start gap-3 bg-amber-900/20 border border-amber-800/50 rounded-lg px-4 py-3 mb-5">
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <p className="text-xs text-amber-200/90 leading-relaxed">
-            This file doesn't include the star's {joinWords(assumed.map(a => a.name), 'or')}, so ExoScope
+            This light curve file doesn't include the star's {joinWords(assumed.map(a => a.name), 'or')}, so ExoScope
             assumed the Sun's ({joinWords(assumed.map(a => a.sun), 'and')}). Numbers that depend on the
             star, like planet size, planet temperature, and the rule check, may be off.
           </p>
