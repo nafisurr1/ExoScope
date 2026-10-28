@@ -1,6 +1,6 @@
 import React from 'react';
 import { PredictionResult } from '../utils/exoplanetModel';
-import { ExoplanetFeatures, getPlanetType, getEquilibriumTemp } from '../utils/exoplanetFeatures';
+import { ExoplanetFeatures, getPlanetType } from '../utils/exoplanetFeatures';
 import { checkRules, ConditionCheck, RuleCheck, MEASUREMENT, RULE_RESULTS } from '../utils/foldseRules';
 import { AlertTriangle, Check, CheckCircle, ListChecks, X, XCircle, Zap, Globe, Thermometer, Clock, Layers } from 'lucide-react';
 
@@ -118,7 +118,7 @@ function ruleSummary(r: RuleCheck): string {
 const ExoplanetResult: React.FC<ExoplanetResultProps> = ({ result }) => {
   const { isExoplanet, planetProbability, features } = result;
   const planetType = getPlanetType(features.est_planet_radius_rearth);
-  const teq = getEquilibriumTemp(features.period_days);
+  const teq = features.eq_temperature_k;
   const habitable = teq > 200 && teq < 320;
   const ruleCheck = checkRules(features);
   const rulesSayPlanet = ruleCheck.holds;
@@ -154,7 +154,7 @@ const ExoplanetResult: React.FC<ExoplanetResultProps> = ({ result }) => {
           <p className="text-xs text-amber-200/90 leading-relaxed">
             This file doesn't include the star's {joinWords(assumed.map(a => a.name), 'or')}, so ExoScope
             assumed the Sun's ({joinWords(assumed.map(a => a.sun), 'and')}). Numbers that depend on the
-            star, like planet size and the rule check, may be off.
+            star, like planet size, planet temperature, and the rule check, may be off.
           </p>
         </div>
       )}

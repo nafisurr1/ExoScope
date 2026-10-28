@@ -404,8 +404,3 @@ export function getPlanetType(r: number): string {
   if (r < 6.0)  return 'Neptune-like';
   return 'Gas Giant';
 }
-
-export function getEquilibriumTemp(periodDays: number): number {
-  const a = Math.pow(periodDays / 365.25, 2/3);
-  return 278 * Math.pow(1 / (a * a), 0.25);
-}
