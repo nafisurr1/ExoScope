@@ -26,22 +26,25 @@ interface SearchResult {
 
 // Every ID, period and radius below is taken from NASA's KOI cumulative table
 // (ml/koi_cumulative.csv). The false positives are described by the reason
-// NASA's vetting flagged them for.
+// NASA's vetting flagged them for. Each star was checked on the quarter this
+// page downloads: the search finds NASA's period and the verdict matches NASA.
+// Planets with orbits longer than about 45 days are left out, because one
+// ~90-day quarter cannot show enough transits to find them.
 const CURATED: KOITarget[] = [
   { kepid: 5780885,  name: 'Kepler-7b',   disposition: 'CONFIRMED',     period: 4.89,  radiusEarth: 16.7, type: 'Hot Jupiter',  description: 'One of the least dense exoplanets known — very deep, clean transits.' },
   { kepid: 6922244,  name: 'Kepler-8b',   disposition: 'CONFIRMED',     period: 3.52,  radiusEarth: 14.6, type: 'Hot Jupiter',  description: 'A hot Jupiter around an F-type star with a misaligned orbit.' },
   { kepid: 11904151, name: 'Kepler-10b',  disposition: 'CONFIRMED',     period: 0.84,  radiusEarth: 1.43, type: 'Rocky',        description: 'First confirmed rocky exoplanet found by Kepler — ultra short period.' },
   { kepid: 11804465, name: 'Kepler-12b',  disposition: 'CONFIRMED',     period: 4.44,  radiusEarth: 18.1, type: 'Hot Jupiter',  description: 'Extremely inflated hot Jupiter — one of the largest known exoplanets.' },
-  { kepid: 10593626, name: 'Kepler-22b',  disposition: 'CONFIRMED',     period: 289.9, radiusEarth: 2.34, type: 'Super-Earth',  description: 'First confirmed Kepler planet in the habitable zone of a Sun-like star.' },
-  { kepid: 8120608,  name: 'Kepler-186f', disposition: 'CONFIRMED',     period: 129.9, radiusEarth: 1.18, type: 'Earth-sized',  description: 'First Earth-sized planet confirmed in the habitable zone of another star.' },
-  { kepid: 11442793, name: 'Kepler-90g',  disposition: 'CONFIRMED',     period: 210.6, radiusEarth: 7.70, type: 'Gas Giant',    description: 'Part of the 8-planet Kepler-90 system — matching our solar system count.' },
-  { kepid: 6541920,  name: 'Kepler-11b',  disposition: 'CONFIRMED',     period: 10.3,  radiusEarth: 1.84, type: 'Super-Earth',  description: 'Innermost of the six planets packed close around Kepler-11.' },
+  { kepid: 3323887,  name: 'Kepler-9b',   disposition: 'CONFIRMED',     period: 19.27, radiusEarth: 7.74, type: 'Gas Giant',    description: 'First multi-planet system confirmed by its planets tugging on each other\'s timing.' },
+  { kepid: 3632418,  name: 'Kepler-21b',  disposition: 'CONFIRMED',     period: 2.79,  radiusEarth: 1.69, type: 'Super-Earth',  description: "A small planet around one of the brightest stars in Kepler's field of view." },
+  { kepid: 9818381,  name: 'Kepler-43b',  disposition: 'CONFIRMED',     period: 3.02,  radiusEarth: 12.1, type: 'Hot Jupiter',  description: 'A hot Jupiter that circles its star in about three days.' },
+  { kepid: 6541920,  name: 'Kepler-11c',  disposition: 'CONFIRMED',     period: 13.03, radiusEarth: 2.88, type: 'Sub-Neptune',  description: 'One of six planets packed close around the star Kepler-11.' },
   { kepid: 11853905, name: 'Kepler-4b',   disposition: 'CONFIRMED',     period: 3.21,  radiusEarth: 4.13, type: 'Hot Neptune',  description: "One of Kepler's first five announced planets — a hot Neptune." },
   { kepid: 10874614, name: 'Kepler-6b',   disposition: 'CONFIRMED',     period: 3.23,  radiusEarth: 13.1, type: 'Hot Jupiter',  description: "Hot Jupiter around a metal-rich star; one of Kepler's first five announced planets." },
-  { kepid: 2445129,  name: 'KIC 2445129', disposition: 'FALSE POSITIVE', period: 10.32, radiusEarth: 0,   type: 'False Positive', description: 'NASA found a second, shallower eclipse and a shifted light center: two stars, not a planet.' },
-  { kepid: 9071386,  name: 'KIC 9071386', disposition: 'FALSE POSITIVE', period: 4.69,  radiusEarth: 0,   type: 'False Positive', description: 'NASA found a second, shallower eclipse between the main dips — the mark of two stars orbiting each other.' },
-  { kepid: 6631721,  name: 'KIC 6631721', disposition: 'FALSE POSITIVE', period: 13.74, radiusEarth: 0,   type: 'False Positive', description: 'The light center moves during each dip, so NASA traced the dip to a different star nearby.' },
-  { kepid: 8162790,  name: 'KIC 8162790', disposition: 'FALSE POSITIVE', period: 10.16, radiusEarth: 0,   type: 'False Positive', description: "Its dips line up in time with another known star's, so NASA ruled it light leaking from that star." },
+  { kepid: 9673173,  name: 'KIC 9673173', disposition: 'FALSE POSITIVE', period: 21.30, radiusEarth: 0,   type: 'False Positive', description: 'NASA found a second, shallower eclipse and a deep V-shaped dip: two stars orbiting each other.' },
+  { kepid: 8736245,  name: 'KIC 8736245', disposition: 'FALSE POSITIVE', period: 2.54,  radiusEarth: 0,   type: 'False Positive', description: 'Alternate dips have different depths, a sign of two stars taking turns eclipsing each other.' },
+  { kepid: 4826439,  name: 'KIC 4826439', disposition: 'FALSE POSITIVE', period: 1.24,  radiusEarth: 0,   type: 'False Positive', description: 'Its light drops by over 40% in each dip, far too much for a planet: NASA flagged it as two stars.' },
+  { kepid: 3327993,  name: 'KIC 3327993', disposition: 'FALSE POSITIVE', period: 2.12,  radiusEarth: 0,   type: 'False Positive', description: "Its dips line up in time with another star's, so NASA ruled it light leaking from that star." },
 ];
 
 // All known Kepler quarter timestamps, ordered by most common coverage
