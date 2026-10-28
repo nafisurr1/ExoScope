@@ -82,10 +82,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
           
           <div>
             <h3 className="text-lg font-medium text-slate-200">
-              {loading ? "Processing Binary Data..." : "Upload Light Curve File"}
+              {loading ? "Reading file..." : "Upload Light Curve File"}
             </h3>
             <p className="text-slate-400 mt-1 text-sm">
-              Drag & drop a Kepler/TESS <code className="bg-slate-800 px-1 py-0.5 rounded text-cyan-300">.fits</code> file here
+              Drag & drop a Kepler <code className="bg-slate-800 px-1 py-0.5 rounded text-cyan-300">.fits</code> file here
             </p>
           </div>
         </div>

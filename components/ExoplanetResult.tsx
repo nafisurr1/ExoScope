@@ -231,7 +231,7 @@ const ExoplanetResult: React.FC<ExoplanetResultProps> = ({ result }) => {
             : <XCircle className="w-7 h-7 text-red-400" />}
           <div>
             <h2 className={`text-xl font-bold ${isExoplanet ? 'text-cyan-300' : 'text-slate-300'}`}>
-              {isExoplanet ? '✅ Exoplanet Candidate Detected' : '❌ No Exoplanet Detected'}
+              {isExoplanet ? 'Exoplanet Candidate Detected' : 'No Exoplanet Detected'}
             </h2>
             <p className="text-slate-500 text-sm mt-0.5">
               ML + Physics Analysis · {features.total_obs_days.toFixed(0)} days observed

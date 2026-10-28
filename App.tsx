@@ -459,13 +459,13 @@ function App() {
         {!fitsData && (
           <div className="text-center py-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <h1 className="text-4xl sm:text-6xl font-extrabold text-white tracking-tight mb-6">
-              Explore the <span className="text-cyan-400">Universe</span> in Binary.
+              Explore the <span className="text-cyan-400">Universe</span>
             </h1>
             <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-10">
-              A purely client-side FITS parser for NASA Kepler &amp; TESS data.
-              Upload a standard <code className="text-cyan-300">.fits</code> light
-              curve file to instantly extract metadata and visualize photometric
-              flux without sending data to a server.
+              Upload a NASA Kepler light curve. ExoScope searches it for the tiny
+              dips a passing planet makes, judges the signal with a model trained
+              on NASA's vetted Kepler catalog, and shows the rules behind its
+              answer. Your file never leaves your browser.
             </p>
 
             {}
@@ -517,7 +517,15 @@ function App() {
       </main>
 
       <footer className="border-t border-slate-900 mt-20 py-8 text-center text-slate-600 text-sm">
-        <p>ExoScope © {new Date().getFullYear()} • Built for Astrophysics</p>
+        <p>
+          ExoScope © {new Date().getFullYear()} · Built by Nafisur Rahman and Shuban Langadi ·{' '}
+          <a href="https://github.com/nafisurr1/ExoScope" className="hover:text-slate-400 underline underline-offset-2">Source on GitHub</a>
+        </p>
+        <p className="mt-2 max-w-3xl mx-auto px-4 text-xs">
+          This research has made use of the NASA Exoplanet Archive, which is operated by the California
+          Institute of Technology, under contract with the National Aeronautics and Space Administration
+          under the Exoplanet Exploration Program.
+        </p>
       </footer>
     </div>
   );
