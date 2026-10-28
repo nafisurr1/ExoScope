@@ -62,10 +62,10 @@ KOI-797.01) and a false positive (KIC 11619964, KOI-7466.01, an eclipsing
 binary) — so you can try it without downloading anything. Both are unedited
 quarter-2 files from MAST, in `public/examples/`.
 
-> **Note:** the NASA archive search on the home page calls `/api/mast`, which is
-> a Vercel serverless function, so it only works on the deployed site. Under
-> `npm run dev` it returns HTTP 500. Use the example buttons or a local file
-> instead. See [ARCHITECTURE.md](ARCHITECTURE.md#known-issues).
+> **Note:** the NASA archive search downloads light curves through a Vercel
+> serverless function (`api/mast.ts`) on the deployed site. `npm run dev` can't
+> run that function, so in development it goes through the `/mast-proxy` route
+> in `vite.config.ts` instead.
 
 ### Production build
 

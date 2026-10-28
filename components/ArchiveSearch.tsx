@@ -66,6 +66,17 @@ const QUARTER_TIMESTAMPS = [
 ];
 
 /**
+ * Where to download a MAST file from. The deployed site goes through the Vercel
+ * function in api/mast.ts; `npm run dev` cannot run that function, so it uses
+ * the /mast-proxy route defined in vite.config.ts instead.
+ */
+function mastDownloadUrl(uri: string): string {
+  return import.meta.env.DEV
+    ? `/mast-proxy/api/v0.1/Download/file?uri=${encodeURIComponent(uri)}`
+    : `/api/mast?uri=${encodeURIComponent(uri)}`;
+}
+
+/**
  * Probe a URL to check if it exists WITHOUT downloading the body and WITHOUT
  * Range headers (MAST blocks byte-range requests from browsers without auth).
  *
@@ -160,7 +171,7 @@ async function getMastProductUrl(obsid: string): Promise<string | null> {
   if (!llc) return null;
   const uri: string = llc.dataURI ?? llc.dataUri ?? llc.uri ?? '';
   if (!uri) return null;
-  return `/api/mast?uri=${encodeURIComponent(uri)}`;
+  return mastDownloadUrl(uri);
 }
 
 /**
@@ -177,7 +188,7 @@ async function bruteForceQuarter(kepid: number): Promise<string | null> {
 
   const allUrls = QUARTER_TIMESTAMPS.map((ts) => {
     const uri = `mast:Kepler/url/missions/kepler/lightcurves/${id4}/${id9}/kplr${id9}-${ts}_llc.fits`;
-    return `/api/mast?uri=${encodeURIComponent(uri)}`;
+    return mastDownloadUrl(uri);
   });
 
   // Check in batches of 4 (concurrent) → fast but not hammering MAST

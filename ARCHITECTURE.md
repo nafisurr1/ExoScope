@@ -312,15 +312,10 @@ Ordered by impact.
    (`App.tsx:416`) with no worker and no yields. Not perceptible, but a Web
    Worker would be the correct structure.
 
-5. **Archive search only works on Vercel.** `ArchiveSearch.tsx` requests
-   `/api/mast`, implemented as a Vercel function in `api/mast.ts`. In
-   `npm run dev` that path returns HTTP 500. `vite.config.ts` already defines a
-   working `/mast-proxy` route that nothing calls.
-
-6. **Planet temperature assumes a Sun-mass star** when converting the period to
+5. **Planet temperature assumes a Sun-mass star** when converting the period to
    an orbit size. It does use the star's own temperature and radius.
 
-7. **`index.html` links `/index.css`, which does not exist** — the build warns
+6. **`index.html` links `/index.css`, which does not exist** — the build warns
    and the request 404s at runtime. The `importmap` in `index.html` points at
    `aistudiocdn.com` and is overridden by Vite.
 
