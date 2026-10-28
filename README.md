@@ -8,7 +8,7 @@ entirely in your browser.
 
 Live at **<https://exoscope-rho.vercel.app>**.
 
-**Built by Shuban Langadi & Nafisur Rahman** — ISTA Period 4
+**Built by Nafisur Rahman & Shuban Langadi**
 
 For how the code works internally, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
